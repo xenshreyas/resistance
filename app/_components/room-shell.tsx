@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import {
   useEffect,
   useRef,
@@ -52,7 +51,6 @@ function formatCountdown(deadline: string | null, serverTime: string) {
 }
 
 export function RoomShell({ code, initialState }: RoomShellProps) {
-  const router = useRouter();
   const [state, setState] = useState(initialState);
   const [joinName, setJoinName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -173,16 +171,6 @@ export function RoomShell({ code, initialState }: RoomShellProps) {
     });
   }
 
-  async function refreshState() {
-    const response = await fetch(`/api/rooms/${code}/state`, {
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      throw new Error("Unable to refresh room state.");
-    }
-    setState((await response.json()) as ViewerRoomState);
-  }
-
   return (
     <main className="mx-auto flex w-full max-w-[1580px] flex-1 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 xl:px-10 xl:py-8">
       <header className="grid gap-4 rounded-[1.9rem] border border-white/10 bg-[linear-gradient(135deg,rgba(13,20,25,0.96),rgba(7,11,15,0.98))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.36)] xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.9fr)] xl:items-start">
@@ -264,8 +252,7 @@ export function RoomShell({ code, initialState }: RoomShellProps) {
                 await postJson(`/api/rooms/${code}/join`, {
                   displayName: joinName,
                 });
-                await refreshState();
-                router.refresh();
+                window.location.reload();
               });
             }}
           >
@@ -384,6 +371,21 @@ export function RoomShell({ code, initialState }: RoomShellProps) {
                         ) : null}
                       </div>
                     </div>
+                    {isHost && !player.isHost ? (
+                      <button
+                        type="button"
+                        className="mt-3 rounded-xl border border-rose-300/18 bg-rose-400/8 px-3 py-2 text-xs font-medium uppercase tracking-[0.16em] text-rose-100 transition hover:bg-rose-400/14"
+                        onClick={() =>
+                          runAction(async () => {
+                            await postJson(`/api/rooms/${code}/kick`, {
+                              playerId: player.id,
+                            });
+                          })
+                        }
+                      >
+                        Remove player
+                      </button>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -400,9 +402,26 @@ export function RoomShell({ code, initialState }: RoomShellProps) {
                     spectators.map((player) => (
                       <div
                         key={player.id}
-                        className="rounded-2xl border border-white/8 bg-[#091116] px-3 py-2 text-sm text-slate-300"
+                        className="rounded-2xl border border-white/8 bg-[#091116] px-3 py-3 text-sm text-slate-300"
                       >
-                        {player.displayName}
+                        <div className="flex items-center justify-between gap-3">
+                          <span>{player.displayName}</span>
+                          {isHost ? (
+                            <button
+                              type="button"
+                              className="rounded-xl border border-rose-300/18 bg-rose-400/8 px-2 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-rose-100 transition hover:bg-rose-400/14"
+                              onClick={() =>
+                                runAction(async () => {
+                                  await postJson(`/api/rooms/${code}/kick`, {
+                                    playerId: player.id,
+                                  });
+                                })
+                              }
+                            >
+                              Remove
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
                     ))
                   ) : (

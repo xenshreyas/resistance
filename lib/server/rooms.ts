@@ -240,6 +240,22 @@ async function resetRoomToLobby(
   await appendEvent(client, room.id, "reset", reason);
 }
 
+async function reseatPlayers(client: PoolClient, roomId: string) {
+  const players = await getPlayersByRoomId(client, roomId);
+  const seatedPlayers = players
+    .filter((player) => player.seat_index !== null)
+    .sort((left, right) => (left.seat_index ?? 999) - (right.seat_index ?? 999));
+
+  for (const [seatIndex, player] of seatedPlayers.entries()) {
+    if (player.seat_index !== seatIndex) {
+      await client.query(
+        "UPDATE players SET seat_index = $2, updated_at = NOW() WHERE id = $1",
+        [player.id, seatIndex],
+      );
+    }
+  }
+}
+
 async function maybeAutoResetPausedGame(
   client: PoolClient,
   room: RoomRecord,
@@ -882,6 +898,51 @@ export async function restartRoom(roomCodeInput: string, sessionToken: string) {
     }
 
     await resetRoomToLobby(client, room, `${viewer.display_name} restarted the room.`);
+  });
+
+  notifyRoom(roomCode);
+}
+
+export async function kickPlayer(
+  roomCodeInput: string,
+  sessionToken: string,
+  targetPlayerId: string,
+) {
+  const roomCode = parseRoomCode(roomCodeInput);
+
+  await withTransaction(async (client) => {
+    const { room, players, viewer } = await requireViewerPlayer(client, roomCode, sessionToken);
+    if (viewer.id !== room.host_player_id) {
+      throw new Error("Only the host can remove players.");
+    }
+
+    const target = players.find((player) => player.id === targetPlayerId);
+    if (!target) {
+      throw new Error("Player not found.");
+    }
+    if (target.id === room.host_player_id) {
+      throw new Error("The host cannot remove themself.");
+    }
+
+    await client.query("DELETE FROM players WHERE id = $1", [target.id]);
+
+    if (room.status === "lobby") {
+      await reseatPlayers(client, room.id);
+      await appendEvent(client, room.id, "player_removed", `${viewer.display_name} removed ${target.display_name} from the room.`);
+      return;
+    }
+
+    if (target.seat_index === null) {
+      await appendEvent(client, room.id, "spectator_removed", `${viewer.display_name} removed spectator ${target.display_name}.`);
+      return;
+    }
+
+    await reseatPlayers(client, room.id);
+    await resetRoomToLobby(
+      client,
+      room,
+      `${viewer.display_name} removed ${target.display_name}. The current game was returned to the lobby.`,
+    );
   });
 
   notifyRoom(roomCode);

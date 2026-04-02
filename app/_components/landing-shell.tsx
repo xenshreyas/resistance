@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 type ActionState = {
@@ -28,7 +27,6 @@ async function postJson<TResponse>(
 }
 
 export function LandingShell() {
-  const router = useRouter();
   const [createName, setCreateName] = useState("");
   const [joinName, setJoinName] = useState("");
   const [joinCode, setJoinCode] = useState("");
@@ -83,7 +81,7 @@ export function LandingShell() {
                       "/api/rooms",
                       { displayName: createName },
                     );
-                    router.push(`/room/${payload.roomCode}`);
+                    window.location.assign(`/room/${payload.roomCode}`);
                   } catch (error) {
                     setCreateState({
                       error:
@@ -132,7 +130,7 @@ export function LandingShell() {
                         displayName: joinName,
                       },
                     );
-                    router.push(`/room/${payload.roomCode}`);
+                    window.location.assign(`/room/${payload.roomCode}`);
                   } catch (error) {
                     setJoinState({
                       error:
