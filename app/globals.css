@@ -47,3 +47,47 @@ textarea {
   background: rgba(140, 224, 235, 0.25);
   color: white;
 }
+
+/* ── Ambient particle drift ── */
+@keyframes particle-rise {
+  0%   { opacity: 0; transform: translateY(0) translateX(0) scale(0.7); }
+  6%   { opacity: 0.55; }
+  88%  { opacity: 0.1; }
+  100% { opacity: 0; transform: translateY(-105vh) translateX(var(--px-drift, 20px)) scale(1.1); }
+}
+
+/* ── Phase transition sweep ── */
+@keyframes phase-sweep {
+  0%   { transform: translateX(-110%); opacity: 0.9; }
+  100% { transform: translateX(110vw);  opacity: 0.15; }
+}
+
+/* ── Mission reveal entrance ── */
+@keyframes reveal-in {
+  from { opacity: 0; transform: translateY(10px); filter: blur(4px); }
+  to   { opacity: 1; transform: none;             filter: none; }
+}
+
+/* ── Suspense dot blink ── */
+@keyframes dot-blink {
+  0%, 65%, 100% { opacity: 0.1;  transform: scale(0.75); }
+  32%            { opacity: 1;    transform: scale(1); }
+}
+
+/* ── Current-mission card glow ── */
+@keyframes card-glow {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50%       { box-shadow: 0 0 18px 3px rgba(34, 211, 238, 0.13); }
+}
+
+/* ── Landing page node pulse ── */
+@keyframes node-pulse {
+  0%, 100% { opacity: 0.3; r: 18; }
+  50%       { opacity: 0;   r: 28; }
+}
+
+/* ── Landing scanline drift ── */
+@keyframes scanline-drift {
+  from { background-position: 0 0; }
+  to   { background-position: 0 100px; }
+}
