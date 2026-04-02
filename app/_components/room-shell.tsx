@@ -803,10 +803,25 @@ export function RoomShell({ code, initialState }: RoomShellProps) {
                   ) : null}
 
                   {state.game?.phase === "mission_reveal" ? (
-                    <p className="text-sm leading-7 text-slate-300/72">
-                      Review the reveal. The next leader can propose the
-                      following mission when ready.
-                    </p>
+                    <>
+                      <p className="text-sm leading-7 text-slate-300/72">
+                        Review the reveal. The next leader can move the room to
+                        the next proposal when ready.
+                      </p>
+                      {state.viewer.seatIndex === state.game.leaderSeat ? (
+                        <button
+                          type="button"
+                          className="rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950"
+                          onClick={() =>
+                            runAction(async () => {
+                              await postJson(`/api/rooms/${code}/advance`);
+                            })
+                          }
+                        >
+                          Continue to next proposal
+                        </button>
+                      ) : null}
+                    </>
                   ) : null}
 
                   {!isHost &&

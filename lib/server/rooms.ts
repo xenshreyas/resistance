@@ -794,6 +794,40 @@ export async function submitProposal(
   notifyRoom(roomCode);
 }
 
+export async function advanceReveal(
+  roomCodeInput: string,
+  sessionToken: string,
+) {
+  const roomCode = parseRoomCode(roomCodeInput);
+
+  await withTransaction(async (client) => {
+    const { room, game, viewer } = await requireViewerPlayer(client, roomCode, sessionToken);
+    const state = requireLiveGame(game);
+
+    if (state.phase !== "mission_reveal") {
+      throw new Error("The room is not waiting on a reveal transition.");
+    }
+
+    if (viewer.seat_index !== state.leaderSeat) {
+      throw new Error("Only the next leader can continue to the next proposal.");
+    }
+
+    advanceAfterReveal(state);
+    await client.query("UPDATE games SET state = $2, updated_at = NOW() WHERE room_id = $1", [
+      room.id,
+      JSON.stringify(state),
+    ]);
+    await appendEvent(
+      client,
+      room.id,
+      "round_advanced",
+      `${viewer.display_name} advanced to the next proposal.`,
+    );
+  });
+
+  notifyRoom(roomCode);
+}
+
 export async function submitTeamVote(
   roomCodeInput: string,
   sessionToken: string,
